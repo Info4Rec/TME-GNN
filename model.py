@@ -101,12 +101,12 @@ class CombineGraph(Module):
 
     def neg_sample(self, hidden):
         bs = self.embedding.weight[1:]
-        scores = torch.matmul(bs, hidden)
+        scores = torch.matmul(hidden, bs.transpose(1, 0))
         scores = torch.softmax(scores, 0)
-        values, postion = scores.topk(4000, dim=0, largest=True, sorted=True)
+        values, postion = scores.topk(200, dim=0, largest=True, sorted=True)
         # print(postion.shape) #k*num_node
         negs = torch.cuda.FloatTensor(10, self.batch_size, self.dim).fill_(0)
-        random_slices = torch.randint(10, 4000, (10,))
+        random_slices = torch.randint(10, 200, (10,))
 
         for i in torch.arange(10):
             negs[i] = bs[postion[random_slices[i]]]
