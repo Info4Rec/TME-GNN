@@ -101,13 +101,15 @@ class CombineGraph(Module):
 
     def neg_sample(self, hidden):
         bs = self.embedding.weight[1:]
-        scores = torch.matmul(hidden, bs.transpose(1, 0))
+        print(hidden.shape)
+        scores = torch.matmul(bs, hidden.transpose(1,0))
         scores = torch.softmax(scores, 0)
         values, postion = scores.topk(200, dim=0, largest=True, sorted=True)
         # print(postion.shape) #k*num_node
         negs = torch.cuda.FloatTensor(10, self.batch_size, self.dim).fill_(0)
+        if hidden.shape[0] != self.batch_size:
+            return negs
         random_slices = torch.randint(10, 200, (10,))
-
         for i in torch.arange(10):
             negs[i] = bs[postion[random_slices[i]]]
         return negs
@@ -244,7 +246,7 @@ def train_test(model, train_data, test_data, sslrate):
     train_loader = torch.utils.data.DataLoader(train_data, num_workers=4, batch_size=model.batch_size,
                                                shuffle=False, pin_memory=False)
     # slices = train_data.generate_batch(model.batch_size)
-    for data in tqdm(train_loader):
+    for data in train_loader:
         model.optimizer.zero_grad()
         targets, scores, ssl_loss, triploss = forward(model, data, model.Eiters)
         model.Eiters += 1
